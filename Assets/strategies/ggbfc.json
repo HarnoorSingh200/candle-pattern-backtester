@@ -1,0 +1,40 @@
+{
+  "name": "ggbfc",
+  "interval": 15,
+  "bb_period": 20,
+  "bb_stddev": 2.0,
+  "pattern_candles": [
+    {
+      "color_green": null,
+      "color_red": null,
+      "upper_wick_x_body_min": null,
+      "upper_wick_x_body_max": null,
+      "lower_wick_x_body_min": null,
+      "lower_wick_x_body_max": null,
+      "body_x_prev_min": null,
+      "body_x_prev_max": null,
+      "close_above_upper_band": null,
+      "close_below_lower_band": null,
+      "close_above_middle_band": null,
+      "close_below_middle_band": null,
+      "low_below_lower_band": null,
+      "high_above_upper_band": null,
+      "open_above_upper_band": null,
+      "open_below_lower_band": null,
+      "whole_candle_within_bands": null,
+      "body_within_bands": null,
+      "volume_gt_prev_candle": null,
+      "volume_lt_prev_candle": null,
+      "volume_x_prev_min": null,
+      "candle_change_pct_min": 1,
+      "candle_change_pct_max": null,
+      "change_vs_prev_close_pct_min": null,
+      "change_vs_prev_close_pct_max": null,
+      "gap_up_pct_min": null,
+      "gap_down_pct_min": null
+    }
+  ],
+  "hold_candles": 1,
+  "direction": "long",
+  "days": 500
+}

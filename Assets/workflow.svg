@@ -1,0 +1,304 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1140 560" width="100%" height="100%" style="background:#090d16; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <defs>
+    <!-- Background Gradients -->
+    <radialGradient id="bgGlow" cx="50%" cy="0%" r="80%">
+      <stop offset="0%" stop-color="#1e293b" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#090d16" stop-opacity="1"/>
+    </radialGradient>
+    <linearGradient id="cardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#161f30" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#0d1424" stop-opacity="0.9"/>
+    </linearGradient>
+
+    <!-- Node Border Gradients -->
+    <linearGradient id="cyanBorder" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#0284c7"/>
+    </linearGradient>
+    <linearGradient id="blueBorder" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#818cf8"/>
+      <stop offset="100%" stop-color="#4f46e5"/>
+    </linearGradient>
+    <linearGradient id="emeraldBorder" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34d399"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+    <linearGradient id="amberBorder" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </linearGradient>
+
+    <!-- Connector Gradient -->
+    <linearGradient id="flowLine" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="33%" stop-color="#818cf8"/>
+      <stop offset="66%" stop-color="#34d399"/>
+      <stop offset="100%" stop-color="#fbbf24"/>
+    </linearGradient>
+
+    <!-- Glow Filter -->
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1140" height="560" fill="url(#bgGlow)"/>
+
+  <!-- Subtle Grid Pattern -->
+  <g opacity="0.07" stroke="#ffffff" stroke-width="1">
+    <line x1="0" y1="70" x2="1140" y2="70"/>
+    <line x1="0" y1="140" x2="1140" y2="140"/>
+    <line x1="0" y1="210" x2="1140" y2="210"/>
+    <line x1="0" y1="280" x2="1140" y2="280"/>
+    <line x1="0" y1="350" x2="1140" y2="350"/>
+    <line x1="0" y1="420" x2="1140" y2="420"/>
+    <line x1="0" y1="490" x2="1140" y2="490"/>
+    <line x1="140" y1="0" x2="140" y2="560"/>
+    <line x1="280" y1="0" x2="280" y2="560"/>
+    <line x1="420" y1="0" x2="420" y2="560"/>
+    <line x1="560" y1="0" x2="560" y2="560"/>
+    <line x1="700" y1="0" x2="700" y2="560"/>
+    <line x1="840" y1="0" x2="840" y2="560"/>
+    <line x1="980" y1="0" x2="980" y2="560"/>
+  </g>
+
+  <!-- Header Section -->
+  <g transform="translate(60, 45)">
+    <!-- Pill Badge -->
+    <rect x="0" y="0" width="220" height="26" rx="13" fill="#1e293b" stroke="#38bdf8" stroke-width="1.2" opacity="0.9"/>
+    <circle cx="12" cy="13" r="4" fill="#38bdf8" filter="url(#glow)"/>
+    <text x="24" y="17" fill="#38bdf8" font-size="11" font-weight="700" letter-spacing="1.2">ALGORITHMIC TRADING</text>
+
+    <!-- Main Title -->
+    <text x="0" y="55" fill="#f8fafc" font-size="24" font-weight="800" letter-spacing="-0.5">Candlestick Pattern Strategy Builder &amp; Live Engine</text>
+    <text x="0" y="76" fill="#94a3b8" font-size="13">End-to-End Workflow: From Visual Rule Design &amp; Backtesting to Real-Time Telegram Execution</text>
+  </g>
+
+  <!-- Connecting Pathway Behind Cards -->
+  <path d="M 275 295 L 340 295 M 565 295 L 630 295 M 855 295 L 920 295" stroke="url(#flowLine)" stroke-width="3" stroke-dasharray="6,4" opacity="0.8"/>
+  <polygon points="345,295 337,290 337,300" fill="#818cf8"/>
+  <polygon points="635,295 627,290 627,300" fill="#34d399"/>
+  <polygon points="925,295 917,290 917,300" fill="#fbbf24"/>
+
+  <!-- ==================== CARD 1: VISUAL RULE BUILDER ==================== -->
+  <g transform="translate(50, 155)">
+    <!-- Card Base -->
+    <rect width="230" height="310" rx="16" fill="url(#cardGrad)" stroke="url(#cyanBorder)" stroke-width="1.5"/>
+    
+    <!-- Header -->
+    <rect x="16" y="16" width="34" height="34" rx="8" fill="#0369a1" opacity="0.4"/>
+    <text x="25" y="38" font-size="18">📊</text>
+    <text x="58" y="29" fill="#f8fafc" font-size="14" font-weight="700">1. Rule Builder</text>
+    <text x="58" y="44" fill="#38bdf8" font-size="11" font-weight="600">Web UI (Flask :5050)</text>
+
+    <!-- Mini Visual Graphic: Candlestick Pattern -->
+    <g transform="translate(20, 65)">
+      <rect width="190" height="75" rx="8" fill="#0b1120" stroke="#1e293b" stroke-width="1"/>
+      
+      <!-- Bollinger Upper & Lower Lines -->
+      <path d="M 10 20 Q 95 10 180 22" stroke="#38bdf8" stroke-width="1" stroke-dasharray="3,2" fill="none" opacity="0.6"/>
+      <path d="M 10 40 Q 95 37 180 39" stroke="#64748b" stroke-width="0.8" stroke-dasharray="2,2" fill="none" opacity="0.4"/>
+      <path d="M 10 60 Q 95 64 180 58" stroke="#38bdf8" stroke-width="1" stroke-dasharray="3,2" fill="none" opacity="0.6"/>
+
+      <!-- Candle 1: Red -->
+      <line x1="60" y1="22" x2="60" y2="58" stroke="#f43f5e" stroke-width="1.5"/>
+      <rect x="53" y="30" width="14" height="20" rx="2" fill="#f43f5e"/>
+
+      <!-- Candle 2: Green Bullish Hammer / Engulfing -->
+      <line x1="125" y1="18" x2="125" y2="65" stroke="#10b981" stroke-width="1.5"/>
+      <rect x="118" y="24" width="14" height="28" rx="2" fill="#10b981"/>
+
+      <!-- Indicators tag -->
+      <text x="145" y="36" fill="#34d399" font-size="9" font-weight="600">BB touch</text>
+      <text x="145" y="47" fill="#38bdf8" font-size="8">Vol &gt; Prev</text>
+    </g>
+
+    <!-- Bullet Features -->
+    <g transform="translate(18, 160)" font-size="11" fill="#cbd5e1">
+      <circle cx="5" cy="5" r="3" fill="#38bdf8"/>
+      <text x="15" y="8" font-weight="600">N-Candle Sequences</text>
+      <text x="15" y="21" fill="#94a3b8" font-size="10">Green / Red / Neutral states</text>
+
+      <circle cx="5" cy="40" r="3" fill="#38bdf8"/>
+      <text x="15" y="43" font-weight="600">Geometry Ratios</text>
+      <text x="15" y="56" fill="#94a3b8" font-size="10">Wick-to-body &amp; Gap % bounds</text>
+
+      <circle cx="5" cy="75" r="3" fill="#38bdf8"/>
+      <text x="15" y="78" font-weight="600">Bollinger Band Filters</text>
+      <text x="15" y="91" fill="#94a3b8" font-size="10">Cross, touch, inside/outside</text>
+
+      <circle cx="5" cy="110" r="3" fill="#38bdf8"/>
+      <text x="15" y="113" font-weight="600">Volume Thresholds</text>
+      <text x="15" y="126" fill="#94a3b8" font-size="10">Multipliers vs previous candle</text>
+    </g>
+  </g>
+
+  <!-- ==================== CARD 2: HISTORICAL DATA ENGINE ==================== -->
+  <g transform="translate(330, 155)">
+    <!-- Card Base -->
+    <rect width="230" height="310" rx="16" fill="url(#cardGrad)" stroke="url(#blueBorder)" stroke-width="1.5"/>
+
+    <!-- Header -->
+    <rect x="16" y="16" width="34" height="34" rx="8" fill="#3730a3" opacity="0.4"/>
+    <text x="25" y="38" font-size="18">⚡</text>
+    <text x="58" y="29" fill="#f8fafc" font-size="14" font-weight="700">2. Data Ingestion</text>
+    <text x="58" y="44" fill="#818cf8" font-size="11" font-weight="600">Zerodha Kite API</text>
+
+    <!-- Mini Visual Graphic: Headless Auth & Cache -->
+    <g transform="translate(20, 65)">
+      <rect width="190" height="75" rx="8" fill="#0b1120" stroke="#1e293b" stroke-width="1"/>
+      
+      <!-- API Request Flow -->
+      <rect x="12" y="15" width="50" height="22" rx="4" fill="#1e1b4b" stroke="#6366f1" stroke-width="1"/>
+      <text x="20" y="29" fill="#c7d2fe" font-size="9" font-weight="700">Kite API</text>
+
+      <path d="M 65 26 L 85 26" stroke="#818cf8" stroke-width="1.5" stroke-dasharray="2,2"/>
+      <polygon points="88,26 82,23 82,29" fill="#818cf8"/>
+
+      <rect x="92" y="15" width="85" height="22" rx="4" fill="#0f172a" stroke="#38bdf8" stroke-width="1"/>
+      <text x="98" y="29" fill="#38bdf8" font-size="9" font-weight="600">Auto 2FA (TOTP)</text>
+
+      <!-- Local Disk Cache -->
+      <rect x="12" y="46" width="165" height="19" rx="4" fill="#1e293b" opacity="0.7"/>
+      <text x="22" y="59" fill="#a5b4fc" font-size="8.5">📦 Cached in Assets/data/*.json</text>
+    </g>
+
+    <!-- Bullet Features -->
+    <g transform="translate(18, 160)" font-size="11" fill="#cbd5e1">
+      <circle cx="5" cy="5" r="3" fill="#818cf8"/>
+      <text x="15" y="8" font-weight="600">Headless Authentication</text>
+      <text x="15" y="21" fill="#94a3b8" font-size="10">Zero-browser PyOTP login</text>
+
+      <circle cx="5" cy="40" r="3" fill="#818cf8"/>
+      <text x="15" y="43" font-weight="600">Date-Chunk Pagination</text>
+      <text x="15" y="56" fill="#94a3b8" font-size="10">Auto-stitches 60-day API blocks</text>
+
+      <circle cx="5" cy="75" r="3" fill="#818cf8"/>
+      <text x="15" y="78" font-weight="600">Granular Intervals</text>
+      <text x="15" y="91" fill="#94a3b8" font-size="10">1m, 3m, 5m, 15m, 60m &amp; Daily</text>
+
+      <circle cx="5" cy="110" r="3" fill="#818cf8"/>
+      <text x="15" y="113" font-weight="600">Smart Local Caching</text>
+      <text x="15" y="126" fill="#94a3b8" font-size="10">Zero redundant network calls</text>
+    </g>
+  </g>
+
+  <!-- ==================== CARD 3: BACKTESTING ENGINE ==================== -->
+  <g transform="translate(610, 155)">
+    <!-- Card Base -->
+    <rect width="230" height="310" rx="16" fill="url(#cardGrad)" stroke="url(#emeraldBorder)" stroke-width="1.5"/>
+
+    <!-- Header -->
+    <rect x="16" y="16" width="34" height="34" rx="8" fill="#065f46" opacity="0.4"/>
+    <text x="25" y="38" font-size="18">📈</text>
+    <text x="58" y="29" fill="#f8fafc" font-size="14" font-weight="700">3. Backtester</text>
+    <text x="58" y="44" fill="#34d399" font-size="11" font-weight="600">Realistic Simulation</text>
+
+    <!-- Mini Visual Graphic: Analytics Dashboard Card -->
+    <g transform="translate(20, 65)">
+      <rect width="190" height="75" rx="8" fill="#0b1120" stroke="#1e293b" stroke-width="1"/>
+
+      <!-- Mini Metric 1 -->
+      <text x="16" y="23" fill="#94a3b8" font-size="9">WIN RATE</text>
+      <text x="16" y="40" fill="#34d399" font-size="15" font-weight="800">68.4%</text>
+
+      <!-- Mini Metric 2 -->
+      <text x="100" y="23" fill="#94a3b8" font-size="9">NET PROFIT</text>
+      <text x="100" y="40" fill="#38bdf8" font-size="15" font-weight="800">+24.8%</text>
+
+      <!-- Mini Equity Curve -->
+      <path d="M 16 64 L 45 61 L 80 55 L 115 57 L 150 48 L 175 46" stroke="#10b981" stroke-width="2" fill="none"/>
+      <circle cx="175" cy="46" r="3" fill="#10b981"/>
+    </g>
+
+    <!-- Bullet Features -->
+    <g transform="translate(18, 160)" font-size="11" fill="#cbd5e1">
+      <circle cx="5" cy="5" r="3" fill="#34d399"/>
+      <text x="15" y="8" font-weight="600">Realistic Execution</text>
+      <text x="15" y="21" fill="#94a3b8" font-size="10">Next-open entry &amp; candle hold exits</text>
+
+      <circle cx="5" cy="40" r="3" fill="#34d399"/>
+      <text x="15" y="43" font-weight="600">Risk &amp; Return Metrics</text>
+      <text x="15" y="56" fill="#94a3b8" font-size="10">PnL %, Win/Loss ratio, Drawdown</text>
+
+      <circle cx="5" cy="75" r="3" fill="#34d399"/>
+      <text x="15" y="78" font-weight="600">Multi-Asset Testing</text>
+      <text x="15" y="91" fill="#94a3b8" font-size="10">NSE equities &amp; major indices</text>
+
+      <circle cx="5" cy="110" r="3" fill="#34d399"/>
+      <text x="15" y="113" font-weight="600">Strategy Portability</text>
+      <text x="15" y="126" fill="#94a3b8" font-size="10">Saved as reusable JSON configs</text>
+    </g>
+  </g>
+
+  <!-- ==================== CARD 4: LIVE EXECUTION & ALERTS ==================== -->
+  <g transform="translate(870, 155)">
+    <!-- Card Base -->
+    <rect width="230" height="310" rx="16" fill="url(#cardGrad)" stroke="url(#amberBorder)" stroke-width="1.5"/>
+
+    <!-- Header -->
+    <rect x="16" y="16" width="34" height="34" rx="8" fill="#78350f" opacity="0.4"/>
+    <text x="25" y="38" font-size="18">🔔</text>
+    <text x="58" y="29" fill="#f8fafc" font-size="14" font-weight="700">4. Live Execution</text>
+    <text x="58" y="44" fill="#fbbf24" font-size="11" font-weight="600">Telegram &amp; Broker Orders</text>
+
+    <!-- Mini Visual Graphic: Telegram Alert Notification -->
+    <g transform="translate(20, 65)">
+      <rect width="190" height="75" rx="8" fill="#0b1120" stroke="#1e293b" stroke-width="1"/>
+
+      <!-- Notification pill -->
+      <rect x="10" y="10" width="170" height="55" rx="6" fill="#1c1917" stroke="#fbbf24" stroke-width="0.8"/>
+      <text x="18" y="26" fill="#fbbf24" font-size="10" font-weight="700">🚨 STRATEGY SIGNAL</text>
+      <text x="18" y="40" fill="#f8fafc" font-size="9.5">BUY TCS (2953217) @ 2530.0</text>
+      <text x="18" y="53" fill="#94a3b8" font-size="8.5">Tgt: +1.5% | Stop: -0.8% | Hold: 3c</text>
+    </g>
+
+    <!-- Bullet Features -->
+    <g transform="translate(18, 160)" font-size="11" fill="#cbd5e1">
+      <circle cx="5" cy="5" r="3" fill="#fbbf24"/>
+      <text x="15" y="8" font-weight="600">Real-Time Polling</text>
+      <text x="15" y="21" fill="#94a3b8" font-size="10">Multi-threaded interval scanner</text>
+
+      <circle cx="5" cy="40" r="3" fill="#fbbf24"/>
+      <text x="15" y="43" font-weight="600">Instant Telegram Push</text>
+      <text x="15" y="56" fill="#94a3b8" font-size="10">Exact pattern details &amp; timestamp</text>
+
+      <circle cx="5" cy="75" r="3" fill="#fbbf24"/>
+      <text x="15" y="78" font-weight="600">Paper or Live Trading</text>
+      <text x="15" y="91" fill="#94a3b8" font-size="10">Safe toggle switch in live.json</text>
+
+      <circle cx="5" cy="110" r="3" fill="#fbbf24"/>
+      <text x="15" y="113" font-weight="600">Audit Trail</text>
+      <text x="15" y="126" fill="#94a3b8" font-size="10">Full trade log in Assets/trade_log</text>
+    </g>
+  </g>
+
+  <!-- ==================== FOOTER BADGES ==================== -->
+  <g transform="translate(60, 500)">
+    <!-- Tech Stack Pills -->
+    <text x="0" y="19" fill="#64748b" font-size="11" font-weight="600">BUILT WITH:</text>
+    
+    <g transform="translate(85, 4)">
+      <rect width="90" height="22" rx="6" fill="#1e293b"/>
+      <text x="12" y="15" fill="#e2e8f0" font-size="10" font-weight="600">Python 3.10+</text>
+    </g>
+    <g transform="translate(185, 4)">
+      <rect width="60" height="22" rx="6" fill="#1e293b"/>
+      <text x="14" y="15" fill="#e2e8f0" font-size="10" font-weight="600">Flask</text>
+    </g>
+    <g transform="translate(255, 4)">
+      <rect width="135" height="22" rx="6" fill="#1e293b"/>
+      <text x="12" y="15" fill="#e2e8f0" font-size="10" font-weight="600">Zerodha KiteConnect</text>
+    </g>
+    <g transform="translate(400, 4)">
+      <rect width="125" height="22" rx="6" fill="#1e293b"/>
+      <text x="12" y="15" fill="#e2e8f0" font-size="10" font-weight="600">Telegram Bot API</text>
+    </g>
+    <g transform="translate(535, 4)">
+      <rect width="65" height="22" rx="6" fill="#1e293b"/>
+      <text x="12" y="15" fill="#e2e8f0" font-size="10" font-weight="600">PyOTP</text>
+    </g>
+  </g>
+</svg>

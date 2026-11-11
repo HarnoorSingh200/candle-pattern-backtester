@@ -1,0 +1,22 @@
+# Secrets & Credentials
+all_cred.json
+.env
+.env.*
+!.env.example
+!all_cred.json.example
+
+# Token Caches, Trade Logs & Session Files
+Assets/zerodha_token.json
+Assets/trade_log.json
+*.log
+
+# Historical Data Cache (keep strategies, ignore large data dumps)
+Assets/data/*.json
+Assets/data/*.csv
+!Assets/data/.gitkeep
+
+# Python Bytecode & Environments
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/

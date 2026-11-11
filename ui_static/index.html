@@ -1,0 +1,1456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Backtest Builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #0e0f11;
+    --surface:  #16181c;
+    --panel:    #1d1f25;
+    --border:   #2a2d35;
+    --border2:  #383c47;
+    --accent:   #4ade80;
+    --accent2:  #22c55e;
+    --red:      #f87171;
+    --amber:    #fbbf24;
+    --blue:     #60a5fa;
+    --purple:   #a78bfa;
+    --text:     #e8eaf0;
+    --muted:    #6b7280;
+    --muted2:   #9ca3af;
+    --mono:     'IBM Plex Mono', monospace;
+    --sans:     'DM Sans', sans-serif;
+    --radius:   8px;
+    --radius-lg:14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .shell {
+    display: grid;
+    grid-template-columns: 270px 1fr;
+    grid-template-rows: 56px 1fr;
+    min-height: 100vh;
+  }
+
+  /* ── Topbar ── */
+  .topbar {
+    grid-column: 1 / -1;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    gap: 16px;
+  }
+  .topbar-logo { font-family: var(--mono); font-size: 13px; font-weight: 500; color: var(--accent); letter-spacing: .03em; }
+  .topbar-sep { width: 1px; height: 20px; background: var(--border2); }
+  .topbar-broker { font-family: var(--mono); font-size: 11px; color: var(--muted2); padding: 3px 8px; border: 1px solid var(--border2); border-radius: 4px; }
+  .topbar-status { margin-left: auto; font-size: 12px; color: var(--muted); font-family: var(--mono); }
+  .dot { display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--accent); margin-right:6px; }
+  .dot.idle { background: var(--muted); }
+  .dot.running { background: var(--amber); animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 20px 16px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .sidebar-section-label {
+    font-size: 10px; font-weight: 500; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 8px;
+  }
+
+  .broker-selector { display: flex; gap: 6px; }
+  .broker-btn {
+    flex: 1; padding: 8px 10px; border-radius: var(--radius); border: 1px solid var(--border2);
+    background: transparent; color: var(--muted2); font-family: var(--mono); font-size: 12px;
+    font-weight: 500; cursor: pointer; text-align: center; transition: all .15s; letter-spacing: .02em;
+  }
+  .broker-btn:hover { border-color: var(--border2); color: var(--text); background: var(--panel); }
+  .broker-btn.active-zerodha { border-color: var(--blue); background: rgba(96,165,250,.1); color: var(--blue); }
+  .broker-note { font-size: 10px; color: var(--muted); line-height: 1.5; margin-top: 4px; }
+
+  /* ── Stock list ── */
+  .stock-list { display: flex; flex-direction: column; gap: 4px; }
+  .stock-chip {
+    display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: var(--radius);
+    border: 1px solid var(--border); cursor: pointer; transition: border-color .15s, background .15s;
+    user-select: none; position: relative;
+  }
+  .stock-chip:hover:not(.no-token) { border-color: var(--border2); background: var(--panel); }
+  .stock-chip.active { border-color: var(--accent2); background: rgba(74,222,128,.07); }
+  .stock-chip.no-token { opacity: .45; cursor: not-allowed; }
+
+  .stock-chip .sym  { font-family: var(--mono); font-size: 13px; font-weight: 500; color: var(--text); }
+  .stock-chip .exch { font-size: 10px; color: var(--muted); margin-left: auto; }
+  .stock-chip .no-token-badge {
+    font-size: 9px; font-family: var(--mono); color: var(--red);
+    padding: 1px 5px; border-radius: 3px; border: 1px solid rgba(248,113,113,.35);
+    background: rgba(248,113,113,.07); white-space: nowrap;
+  }
+  .stock-chip .chk {
+    width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid var(--border2);
+    flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all .15s;
+  }
+  .stock-chip.active .chk { background: var(--accent); border-color: var(--accent); }
+  .stock-chip.active .chk::after {
+    content:''; display:block; width:8px; height:5px;
+    border-left:1.5px solid #000; border-bottom:1.5px solid #000;
+    transform:rotate(-45deg) translate(0px, -1px);
+  }
+  .stock-chip .token-pill {
+    font-size: 9px; font-family: var(--mono); color: var(--muted);
+    padding: 1px 5px; border-radius: 3px; border: 1px solid var(--border);
+    background: var(--panel); white-space: nowrap; display: none;
+  }
+  .stock-chip:hover .token-pill { display: inline-block; }
+
+  .field { margin-bottom: 12px; }
+  .field label { display:block; font-size:11px; color:var(--muted2); margin-bottom:5px; }
+  .field input, .field select {
+    width: 100%; background: var(--panel); border: 1px solid var(--border2); border-radius: var(--radius);
+    color: var(--text); font-family: var(--mono); font-size: 13px; padding: 7px 10px;
+    outline: none; transition: border-color .15s;
+  }
+  .field input:focus, .field select:focus { border-color: var(--accent); }
+  .field select option { background: var(--panel); }
+  .field-row { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+
+  /* ── Main ── */
+  .main { overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+
+  .candle-tabs { display:flex; gap:6px; flex-wrap:wrap; }
+  .candle-tab {
+    font-size: 12px; font-family: var(--mono); padding: 5px 12px; border-radius: 20px;
+    border: 1px solid var(--border2); color: var(--muted2); cursor: pointer;
+    background: transparent; transition: all .15s;
+  }
+  .candle-tab:hover { border-color: var(--text); color: var(--text); }
+  .candle-tab.active { background: var(--accent); border-color: var(--accent); color: #000; font-weight:500; }
+  .btn-add-candle, .btn-rm-candle {
+    font-size: 12px; padding: 5px 12px; border-radius: 20px; border: 1px dashed var(--border2);
+    color: var(--muted); cursor: pointer; background: transparent; transition: all .15s;
+    font-family: var(--mono);
+  }
+  .btn-add-candle:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-rm-candle:hover  { border-color: var(--red);    color: var(--red); }
+
+  .cat-strip { display: flex; gap: 6px; flex-wrap: wrap; padding-bottom: 4px; }
+  .cat-btn {
+    font-size: 11px; padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border);
+    color: var(--muted2); cursor: pointer; background: transparent; transition: all .15s;
+  }
+  .cat-btn:hover { border-color: var(--border2); color: var(--text); }
+  .cat-btn.on { background: var(--panel); border-color: var(--border2); color: var(--text); }
+
+  .filter-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
+
+  /* ── Filter cards ── */
+  .fcard {
+    background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 12px 14px; cursor: pointer; transition: border-color .15s, background .15s;
+    display: flex; flex-direction: column; gap: 6px; position: relative; user-select: none;
+  }
+  .fcard:hover { border-color: var(--border2); }
+  .fcard.armed { border-color: var(--amber); background: rgba(251,191,36,.04); }
+  .fcard.sel   { border-color: var(--accent); background: rgba(74,222,128,.05); }
+
+  .fcard-top   { display:flex; align-items:flex-start; gap:8px; pointer-events: none; }
+  .fcard-title { font-size: 12px; font-weight: 500; color: var(--text); line-height:1.4; flex:1; }
+  .fcard.sel   .fcard-title { color: var(--accent); }
+  .fcard.armed .fcard-title { color: var(--amber); }
+  .fcard-hint  { font-size: 11px; color: var(--muted); line-height: 1.4; pointer-events: none; }
+
+  .badge { font-size: 9px; font-family: var(--mono); padding: 2px 5px; border-radius: 3px; font-weight: 500; white-space: nowrap; flex-shrink: 0; }
+  .badge-flag   { background: rgba(251,191,36,.15); color: var(--amber); }
+  .badge-num    { background: rgba(96,165,250,.15);  color: var(--blue); }
+  .badge-choice { background: rgba(74,222,128,.15);  color: var(--accent); }
+
+  .fcard-input { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+  .fcard-input input, .fcard-input select {
+    flex: 1; background: var(--surface); border: 1px solid var(--border2); border-radius: 5px;
+    color: var(--text); font-family: var(--mono); font-size: 12px; padding: 5px 8px;
+    outline: none; cursor: pointer;
+  }
+  .fcard-input input:focus, .fcard-input select:focus { border-color: var(--accent); }
+  .fcard-input label { font-size: 11px; color: var(--muted); white-space: nowrap; }
+  .value-hint { font-size: 10px; color: var(--amber); font-family: var(--mono); margin-top: 2px; }
+
+  .fcard.color-green-card.sel { border-color: var(--accent); background: rgba(74,222,128,.1); }
+  .fcard.color-red-card.sel   { border-color: var(--red);    background: rgba(248,113,113,.1); }
+  .fcard.color-green-card.sel .fcard-title { color: var(--accent); }
+  .fcard.color-red-card.sel   .fcard-title { color: var(--red); }
+  .color-icon { font-size: 18px; line-height: 1; }
+
+  /* ── Run bar ── */
+  .run-bar {
+    display: flex; align-items: center; gap: 12px; padding: 16px 20px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); flex-wrap: wrap;
+  }
+  .btn-run {
+    font-family: var(--mono); font-size: 13px; font-weight: 500; padding: 10px 24px;
+    border-radius: var(--radius); background: var(--accent); color: #000; border: none;
+    cursor: pointer; transition: opacity .15s, transform .1s; letter-spacing: .02em;
+  }
+  .btn-run:hover   { opacity: .88; }
+  .btn-run:active  { transform: scale(.98); }
+  .btn-run:disabled { opacity: .4; cursor: not-allowed; }
+  .run-meta { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+  .run-meta strong { color: var(--text); }
+  .btn-save {
+    font-size: 12px; font-family: var(--mono); padding: 8px 14px;
+    border-radius: var(--radius); background: transparent; color: var(--muted2);
+    border: 1px solid var(--border2); cursor: pointer; transition: all .15s;
+  }
+  .btn-save:hover { border-color: var(--text); color: var(--text); }
+
+  /* ── Results ── */
+  .results-section { display: flex; flex-direction: column; gap: 12px; }
+  .results-header { font-size: 11px; font-weight:500; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+
+  .result-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+  .result-card-header { display: flex; align-items: center; padding: 14px 18px; gap: 14px; border-bottom: 1px solid var(--border); }
+  .result-sym   { font-family: var(--mono); font-size: 15px; font-weight: 500; color: var(--text); }
+  .result-exch  { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+  .result-token { font-size: 10px; color: var(--muted); font-family: var(--mono); padding: 2px 6px; border: 1px solid var(--border); border-radius: 4px; }
+  .result-broker-tag { font-size: 10px; font-family: var(--mono); padding: 2px 7px; border-radius: 4px; font-weight: 500; letter-spacing: .04em; }
+  .result-broker-tag.zerodha { background: rgba(96,165,250,.12); color: var(--blue);   border: 1px solid rgba(96,165,250,.3); }
+  .result-error { font-size: 12px; color: var(--red); font-family: var(--mono); }
+
+  .stat-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 0; }
+  .stat { padding: 14px 18px; border-right: 1px solid var(--border); }
+  .stat:last-child { border-right: none; }
+  .stat-label { font-size: 10px; color: var(--muted); letter-spacing:.04em; text-transform:uppercase; margin-bottom:4px; }
+  .stat-value { font-family: var(--mono); font-size: 18px; font-weight: 500; color: var(--text); }
+  .stat-value.pos { color: var(--accent); }
+  .stat-value.neg { color: var(--red); }
+  .stat-value.neu { color: var(--amber); }
+
+  .trades-toggle { padding: 10px 18px; font-size: 11px; color: var(--muted2); cursor: pointer; border-top: 1px solid var(--border); font-family: var(--mono); display:flex; align-items:center; gap:6px; }
+  .trades-toggle:hover { color: var(--text); }
+  .trades-table-wrap { overflow-x: auto; }
+  .trades-table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 11px; }
+  .trades-table th { background: var(--panel); padding: 8px 14px; text-align: left; color: var(--muted); font-weight: 500; letter-spacing: .04em; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  .trades-table td { padding: 7px 14px; border-bottom: 1px solid var(--border); color: var(--text); white-space: nowrap; }
+  .trades-table tr:last-child td { border-bottom: none; }
+  .trades-table td.pos { color: var(--accent); }
+  .trades-table td.neg { color: var(--red); }
+
+  .spinner-wrap { display: none; align-items: center; gap: 12px; font-size: 13px; color: var(--muted2); font-family: var(--mono); padding: 20px 0; }
+  .spinner-wrap.show { display: flex; }
+  .spinner { width: 18px; height: 18px; border: 2px solid var(--border2); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; flex-shrink: 0; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .empty { text-align: center; padding: 48px 24px; color: var(--muted); font-family: var(--mono); font-size: 12px; line-height: 1.8; }
+
+  .section-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; }
+  .section-card-title { font-size: 11px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--panel); border: 1px solid var(--border2); border-radius: var(--radius); padding: 12px 18px; font-family: var(--mono); font-size: 12px; color: var(--text); z-index: 999; opacity: 0; transform: translateY(8px); transition: all .2s; pointer-events: none; max-width: 320px; }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.ok  { border-left: 3px solid var(--accent); }
+  .toast.err { border-left: 3px solid var(--red); }
+
+  /* ── Load strategy modal ── */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.65);
+    backdrop-filter: blur(3px); z-index: 800;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity .2s;
+  }
+  .modal-overlay.show { opacity: 1; pointer-events: all; }
+  .modal {
+    background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius-lg);
+    width: min(600px, 94vw); max-height: 80vh; display: flex; flex-direction: column;
+    overflow: hidden; transform: translateY(12px); transition: transform .2s;
+    box-shadow: 0 24px 64px rgba(0,0,0,.5);
+  }
+  .modal-overlay.show .modal { transform: translateY(0); }
+  .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); }
+  .modal-title  { font-family: var(--mono); font-size: 13px; font-weight: 500; color: var(--text); }
+  .modal-close  {
+    width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--border2);
+    background: transparent; color: var(--muted2); font-size: 16px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; transition: all .15s; line-height: 1;
+  }
+  .modal-close:hover { border-color: var(--red); color: var(--red); }
+  .modal-search { padding: 12px 20px; border-bottom: 1px solid var(--border); }
+  .modal-search input {
+    width: 100%; background: var(--panel); border: 1px solid var(--border2);
+    border-radius: var(--radius); color: var(--text); font-family: var(--mono);
+    font-size: 12px; padding: 8px 12px; outline: none; transition: border-color .15s;
+  }
+  .modal-search input:focus { border-color: var(--accent); }
+  .modal-body { overflow-y: auto; flex: 1; }
+
+  .strat-list { display: flex; flex-direction: column; }
+  .strat-item { padding: 14px 20px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background .12s; display: flex; align-items: flex-start; gap: 14px; }
+  .strat-item:last-child { border-bottom: none; }
+  .strat-item:hover { background: var(--panel); }
+  .strat-icon { width: 32px; height: 32px; border-radius: 8px; background: rgba(74,222,128,.1); border: 1px solid rgba(74,222,128,.2); display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; margin-top: 2px; }
+  .strat-info { flex: 1; min-width: 0; }
+  .strat-name { font-family: var(--mono); font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .strat-meta { font-size: 11px; color: var(--muted); margin-top: 3px; display: flex; gap: 12px; flex-wrap: wrap; }
+  .strat-tags { display: flex; gap: 5px; margin-top: 6px; flex-wrap: wrap; }
+  .strat-tag { font-size: 10px; font-family: var(--mono); padding: 2px 6px; border-radius: 4px; background: var(--panel); border: 1px solid var(--border2); color: var(--muted2); }
+  .strat-tag.long    { background: rgba(74,222,128,.1);  border-color: rgba(74,222,128,.3);  color: var(--accent); }
+  .strat-tag.short   { background: rgba(248,113,113,.1); border-color: rgba(248,113,113,.3); color: var(--red); }
+  .strat-tag.candles { background: rgba(96,165,250,.1);  border-color: rgba(96,165,250,.3);  color: var(--blue); }
+  .strat-conditions  { font-size: 10px; color: var(--muted); font-family: var(--mono); margin-top: 4px; line-height: 1.6; }
+
+  .modal-empty   { padding: 40px 20px; text-align: center; color: var(--muted); font-family: var(--mono); font-size: 12px; line-height: 1.8; }
+  .modal-loading { padding: 40px 20px; text-align: center; color: var(--muted2); font-family: var(--mono); font-size: 12px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+
+  .btn-load-strat {
+    font-size: 12px; font-family: var(--mono); padding: 8px 14px; border-radius: var(--radius);
+    background: transparent; color: var(--purple); border: 1px solid rgba(167,139,250,.35);
+    cursor: pointer; transition: all .15s; display: flex; align-items: center; gap: 6px;
+  }
+  .btn-load-strat:hover { border-color: var(--purple); background: rgba(167,139,250,.08); }
+
+  .loaded-banner {
+    display: none; align-items: center; gap: 10px; padding: 10px 16px;
+    background: rgba(167,139,250,.07); border: 1px solid rgba(167,139,250,.25);
+    border-radius: var(--radius); font-size: 12px; font-family: var(--mono); color: var(--purple);
+  }
+  .loaded-banner.show { display: flex; }
+  .loaded-banner-name { font-weight: 500; color: var(--text); }
+  .btn-clear-strat {
+    margin-left: auto; font-size: 11px; padding: 3px 8px; border-radius: 4px;
+    border: 1px solid rgba(167,139,250,.3); background: transparent; color: var(--purple);
+    cursor: pointer; font-family: var(--mono); transition: all .15s;
+  }
+  .btn-clear-strat:hover { border-color: var(--red); color: var(--red); }
+
+  /* ── Broker-switch info banner ── */
+  .broker-switch-banner {
+    display: none; align-items: center; gap: 10px; padding: 9px 14px;
+    background: rgba(96,165,250,.07); border: 1px solid rgba(96,165,250,.25);
+    border-radius: var(--radius); font-size: 11px; font-family: var(--mono); color: var(--blue);
+  }
+  .broker-switch-banner.show { display: flex; }
+
+  /* ── Data settings divider ── */
+  .settings-divider {
+    height: 1px; background: var(--border); margin: 4px 0;
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- ══ Topbar ══ -->
+  <header class="topbar">
+    <span class="topbar-logo">▸ backtest</span>
+    <div class="topbar-sep"></div>
+    <span class="topbar-broker" id="broker-badge">—</span>
+    <span class="topbar-status">
+      <span class="dot idle" id="status-dot"></span>
+      <span id="status-text">idle</span>
+    </span>
+  </header>
+
+  <!-- ══ Sidebar ══ -->
+  <aside class="sidebar">
+    <div>
+      <div class="sidebar-section-label">Broker</div>
+      <div class="broker-selector" id="broker-selector"></div>
+      <div class="broker-note" id="broker-note"></div>
+    </div>
+
+    <div>
+      <div class="sidebar-section-label">Stocks to test</div>
+      <div id="stock-broker-info" style="font-size:10px;color:var(--muted);font-family:var(--mono);margin-bottom:6px;"></div>
+      <div class="stock-list" id="stock-list">
+        <div style="color:var(--muted);font-size:12px;font-family:var(--mono)">loading…</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="sidebar-section-label">Trade settings</div>
+
+      <div class="field">
+        <label>Strategy name</label>
+        <input type="text" id="strat-name" value="my_strategy">
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label>Direction</label>
+          <select id="direction">
+            <option value="long">Long</option>
+            <option value="short">Short</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Hold candles</label>
+          <input type="number" id="hold-candles" min="1" max="50" value="1">
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label>BB period</label>
+          <input type="number" id="bb-period" min="2" max="200" value="20">
+        </div>
+        <div class="field">
+          <label>BB std dev</label>
+          <input type="number" id="bb-stddev" min="0.1" max="5" step="0.1" value="2.0">
+        </div>
+      </div>
+
+      <!-- ── divider ── -->
+      <div class="settings-divider"></div>
+      <div style="font-size:10px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin:6px 0 8px;">Data settings</div>
+
+      <div class="field-row">
+        <div class="field">
+          <label>Days of data</label>
+          <input type="number" id="days-of-data" min="10" max="3000" value="500">
+        </div>
+        <div class="field">
+          <label>Interval (minutes)</label>
+          <input type="number" id="candle-interval" min="1" value="15">
+        </div>
+      </div>
+
+    </div>
+  </aside>
+
+  <!-- ══ Main ══ -->
+  <main class="main">
+
+    <!-- loaded strategy banner -->
+    <div class="loaded-banner" id="loaded-banner">
+      <span>📂 Loaded:</span>
+      <span class="loaded-banner-name" id="loaded-banner-name"></span>
+      <button class="btn-clear-strat" onclick="clearLoadedStrategy()">✕ clear</button>
+    </div>
+
+    <!-- Candle pattern builder -->
+    <div class="section-card">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <span class="section-card-title">Candle pattern</span>
+        <div style="display:flex;gap:6px;">
+          <button class="btn-rm-candle" onclick="removeCandle()">− remove candle</button>
+          <button class="btn-add-candle" onclick="addCandle()">+ add candle</button>
+        </div>
+      </div>
+      <div class="candle-tabs" id="candle-tabs"></div>
+      <div class="cat-strip" id="cat-strip"></div>
+      <div class="filter-grid" id="filter-grid"></div>
+    </div>
+
+    <!-- Run bar -->
+    <div class="run-bar">
+      <button class="btn-run" id="btn-run" onclick="runBacktest()">▸ Run backtest</button>
+      <div class="run-meta">
+        <strong id="meta-stocks">0</strong> stocks ·
+        <strong id="meta-candles">1</strong> candle pattern ·
+        <strong id="meta-filters">0</strong> conditions
+      </div>
+      <button class="btn-load-strat" onclick="openLoadModal()">
+        📂 Load strategy
+      </button>
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer;">
+        <input type="checkbox" id="chk-save" style="accent-color:var(--accent)"> save strategy
+      </label>
+    </div>
+
+    <!-- Spinner -->
+    <div class="spinner-wrap" id="spinner">
+      <div class="spinner"></div>
+      <span id="spinner-text">Running backtest…</span>
+    </div>
+
+    <!-- Results -->
+    <div class="results-section" id="results-section">
+      <div class="empty">
+        Select stocks on the left, build your candle pattern above,<br>
+        then press <strong style="color:var(--accent)">Run backtest</strong>.
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ══ Load Strategy Modal ══ -->
+<div class="modal-overlay" id="modal-overlay" onclick="handleOverlayClick(event)">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <span class="modal-title">📂 Load saved strategy</span>
+      <button class="modal-close" onclick="closeLoadModal()">✕</button>
+    </div>
+    <div class="modal-search">
+      <input type="text" id="strat-search" placeholder="Search strategies…" oninput="filterStratList()">
+    </div>
+    <div class="modal-body" id="modal-body">
+      <div class="modal-loading">
+        <div class="spinner"></div>
+        <span>Loading strategies…</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ═══════════════════════════════════════
+   STATE
+═══════════════════════════════════════ */
+let CONFIG = { broker:'', supported_brokers:[], stocks:[], defaults:{}, filters:[] };
+let selectedStocks  = new Set();
+let selectedBroker  = '';
+let numCandles      = 1;
+let activeCandle    = 0;
+let activeCategory  = 'all';
+let conditions      = [{}];
+let allStrategies   = [];
+let filteredStrats  = [];
+
+/*
+  armedInputs holds the live string the user is typing for numeric
+  filter cards before it is committed as a real number.
+
+  Key:   "<candleIndex>__<filterKey>"
+  Value: string (raw text from the input, e.g. "0.", "-1.5", "")
+*/
+let armedInputs = {};
+
+
+/* ═══════════════════════════════════════
+   BOOT
+═══════════════════════════════════════ */
+async function boot() {
+  try {
+    const res = await fetch('/api/config');
+    CONFIG = await res.json();
+  } catch(e) {
+    toast('Could not reach server — is backtest.py running?', 'err');
+    return;
+  }
+
+  selectedBroker = CONFIG.broker.toLowerCase();
+
+  document.getElementById('strat-name').value    = CONFIG.defaults.strategy_name   || 'my_strategy';
+  document.getElementById('hold-candles').value  = CONFIG.defaults.hold_candles    || 1;
+  document.getElementById('bb-period').value     = CONFIG.defaults.bb_period       || 20;
+  document.getElementById('bb-stddev').value     = CONFIG.defaults.bb_stddev       || 2.0;
+  document.getElementById('direction').value     = CONFIG.defaults.direction       || 'long';
+  document.getElementById('days-of-data').value  = CONFIG.defaults.days_of_data    || 500;
+
+  // Set candle-interval input to match the default
+  const ciDefault = CONFIG.defaults.candle_interval || 15;
+  document.getElementById('candle-interval').value = ciDefault;
+
+  renderBrokerSelector();
+  renderStocks();
+  renderCatStrip();
+  renderCandleTabs();
+  renderFilterGrid();
+  updateMeta();
+}
+
+
+/* ═══════════════════════════════════════
+   BROKER SELECTOR
+═══════════════════════════════════════ */
+const BROKER_META = {
+  zerodha: { label: 'Zerodha', color: 'zerodha', note: 'Zerodha Kite broker'       },
+};
+
+function renderBrokerSelector() {
+  const el   = document.getElementById('broker-selector');
+  const note = document.getElementById('broker-note');
+  const brokers = CONFIG.supported_brokers.map(b => b.toLowerCase());
+
+  if (!brokers.length) {
+    el.innerHTML = '<span style="font-size:11px;color:var(--muted)">No brokers available.</span>';
+    return;
+  }
+
+  el.innerHTML = brokers.map(b => {
+    const meta     = BROKER_META[b] || { label: b.toUpperCase(), color: b };
+    const isActive = selectedBroker === b;
+    return `<button class="broker-btn${isActive ? ' active-'+meta.color : ''}"
+                    onclick="selectBroker('${b}')">${meta.label}</button>`;
+  }).join('');
+
+  const meta = BROKER_META[selectedBroker] || {};
+  note.textContent = meta.note || '';
+  document.getElementById('broker-badge').textContent = selectedBroker.toUpperCase();
+}
+
+function selectBroker(b) {
+  selectedBroker = b.toLowerCase();
+
+  const removed = [];
+  for (const sym of [...selectedStocks]) {
+    if (!_stockHasToken(sym, selectedBroker)) {
+      selectedStocks.delete(sym);
+      removed.push(sym);
+    }
+  }
+
+  renderBrokerSelector();
+  renderStocks();
+  updateMeta();
+
+  if (removed.length) {
+    toast(
+      `Switched to ${b.toUpperCase()}. Removed ${removed.join(', ')} — no token configured.`,
+      'err'
+    );
+  } else {
+    toast(`Broker switched to ${b.toUpperCase()}`, 'ok');
+  }
+}
+
+function _stockHasToken(sym, brokerKey) {
+  const stock = CONFIG.stocks.find(s => s.symbol === sym);
+  if (!stock) return false;
+  return !!(stock.brokers && stock.brokers[brokerKey.toLowerCase()]);
+}
+
+function _stockExchange(sym) {
+  const stock = CONFIG.stocks.find(s => s.symbol === sym);
+  if (!stock || !stock.brokers) return '—';
+  const entry = stock.brokers[selectedBroker] || Object.values(stock.brokers)[0];
+  return entry ? entry.exchange : '—';
+}
+
+function _stockToken(sym) {
+  const stock = CONFIG.stocks.find(s => s.symbol === sym);
+  if (!stock || !stock.brokers) return '—';
+  const entry = stock.brokers[selectedBroker];
+  return entry ? entry.token : null;
+}
+
+
+/* ═══════════════════════════════════════
+   STOCKS
+═══════════════════════════════════════ */
+function renderStocks() {
+  const el = document.getElementById('stock-list');
+  if (!CONFIG.stocks.length) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:12px">No stocks configured.</div>';
+    updateStockBrokerInfo();
+    return;
+  }
+
+  el.innerHTML = CONFIG.stocks.map(s => {
+    const hasToken  = _stockHasToken(s.symbol, selectedBroker);
+    const exchange  = _stockExchange(s.symbol);
+    const token     = _stockToken(s.symbol);
+    const isActive  = selectedStocks.has(s.symbol);
+
+    if (!hasToken) {
+      return `
+        <div class="stock-chip no-token"
+             onclick="showNoTokenToast('${s.symbol}')"
+             title="No token configured for ${selectedBroker.toUpperCase()}">
+          <div class="chk"></div>
+          <span class="sym">${s.symbol}</span>
+          <span class="exch">${exchange}</span>
+          <span class="no-token-badge">no token</span>
+        </div>`;
+    }
+
+    return `
+      <div class="stock-chip${isActive ? ' active' : ''}"
+           onclick="toggleStock('${s.symbol}')">
+        <div class="chk"></div>
+        <span class="sym">${s.symbol}</span>
+        <span class="exch">${exchange}</span>
+        <span class="token-pill">${token}</span>
+      </div>`;
+  }).join('');
+
+  updateStockBrokerInfo();
+}
+
+function updateStockBrokerInfo() {
+  const el = document.getElementById('stock-broker-info');
+  if (!CONFIG.stocks.length) { el.textContent = ''; return; }
+
+  const total     = CONFIG.stocks.length;
+  const withToken = CONFIG.stocks.filter(s => _stockHasToken(s.symbol, selectedBroker)).length;
+  const missing   = total - withToken;
+
+  if (missing === 0) {
+    el.textContent = `All ${total} stocks have ${selectedBroker.toUpperCase()} tokens ✓`;
+    el.style.color = 'var(--accent)';
+  } else {
+    el.textContent =
+      `${withToken}/${total} stocks have ${selectedBroker.toUpperCase()} tokens` +
+      (missing > 0 ? ` · ${missing} disabled` : '');
+    el.style.color = 'var(--amber)';
+  }
+}
+
+function toggleStock(sym) {
+  if (!_stockHasToken(sym, selectedBroker)) { showNoTokenToast(sym); return; }
+  if (selectedStocks.has(sym)) selectedStocks.delete(sym);
+  else selectedStocks.add(sym);
+  renderStocks();
+  updateMeta();
+}
+
+function showNoTokenToast(sym) {
+  toast(
+    `${sym} has no ${selectedBroker.toUpperCase()} token.\n` +
+    `Add it to WATCHED_STOCKS in backtest.py.`,
+    'err'
+  );
+}
+
+
+/* ═══════════════════════════════════════
+   CANDLE TABS
+═══════════════════════════════════════ */
+function addCandle() {
+  conditions.push({});
+  numCandles++;
+  activeCandle = numCandles - 1;
+  renderCandleTabs();
+  renderFilterGrid();
+  updateMeta();
+}
+
+function removeCandle() {
+  if (numCandles <= 1) { toast('Pattern must have at least one candle.', 'err'); return; }
+  conditions.splice(activeCandle, 1);
+  // also clean up any armedInputs for the removed candle
+  Object.keys(armedInputs).forEach(k => {
+    if (k.startsWith(activeCandle + '__')) delete armedInputs[k];
+  });
+  numCandles--;
+  if (activeCandle >= numCandles) activeCandle = numCandles - 1;
+  renderCandleTabs();
+  renderFilterGrid();
+  updateMeta();
+}
+
+function switchCandle(i) {
+  activeCandle = i;
+  renderCandleTabs();
+  renderFilterGrid();
+}
+
+function renderCandleTabs() {
+  const el = document.getElementById('candle-tabs');
+  el.innerHTML = Array.from({length: numCandles}, (_, i) => {
+    const isSignal = i === numCandles - 1;
+    const label = numCandles === 1
+      ? 'signal candle'
+      : isSignal ? `candle ${i+1} — signal` : `candle ${i+1}`;
+    const count = Object.values(conditions[i] || {})
+      .filter(v => v !== '__armed__').length;
+    return `
+      <button class="candle-tab${activeCandle === i ? ' active' : ''}"
+              onclick="switchCandle(${i})">
+        ${label}${count ? ` <span style="font-size:10px;opacity:.7">(${count})</span>` : ''}
+      </button>`;
+  }).join('');
+}
+
+
+/* ═══════════════════════════════════════
+   CATEGORY STRIP
+═══════════════════════════════════════ */
+const CATEGORIES = [
+  { id:'all',    label:'All' },
+  { id:'color',  label:'Color & body', keys:['color_green','color_red','body_x_prev'] },
+  { id:'wick',   label:'Wicks',        keys:['upper_wick_x_body','lower_wick_x_body'] },
+  { id:'volume', label:'Volume',       keys:['volume'] },
+  { id:'bb',     label:'Bollinger',    keys:['band','bands'] },
+  { id:'change', label:'Price change', keys:['change','candle_change'] },
+  { id:'gap',    label:'Gap',          keys:['gap'] },
+];
+
+function renderCatStrip() {
+  const el = document.getElementById('cat-strip');
+  el.innerHTML = CATEGORIES.map(c =>
+    `<button class="cat-btn${activeCategory === c.id ? ' on' : ''}"
+             onclick="setCategory('${c.id}')">${c.label}</button>`
+  ).join('');
+}
+
+function setCategory(id) {
+  activeCategory = id;
+  renderCatStrip();
+  renderFilterGrid();
+}
+
+function filterVisible(f) {
+  if (activeCategory === 'all') return true;
+  const cat = CATEGORIES.find(c => c.id === activeCategory);
+  if (!cat || !cat.keys) return true;
+  return cat.keys.some(k => f.key.includes(k));
+}
+
+
+/* ═══════════════════════════════════════
+   FILTER GRID
+═══════════════════════════════════════ */
+const HINTS = {
+  color_green:                   'Candle closed higher than it opened — a bullish / up candle.',
+  color_red:                     'Candle closed lower than it opened — a bearish / down candle.',
+  upper_wick_x_body_min:         'Upper shadow must be at least X× the body size. e.g. 1.5 means wick is 1.5× the body.',
+  upper_wick_x_body_max:         'Upper shadow must be no longer than X× the body. e.g. 0.5 = short upper wick.',
+  lower_wick_x_body_min:         'Lower shadow must be at least X× the body size. e.g. 2 = long lower tail.',
+  lower_wick_x_body_max:         'Lower shadow must be no longer than X× the body. e.g. 0.3 = very short tail.',
+  body_x_prev_min:               "This candle's body must be at least X× bigger than the previous candle's body.",
+  body_x_prev_max:               "This candle's body must be no bigger than X× the previous candle's body.",
+  close_above_upper_band:        'Candle closed above the upper Bollinger Band — a potential breakout.',
+  close_below_lower_band:        'Candle closed below the lower Bollinger Band — a potential breakdown.',
+  close_above_middle_band:       'Candle closed above the 20-period moving average (middle band).',
+  close_below_middle_band:       'Candle closed below the 20-period moving average (middle band).',
+  low_below_lower_band:          "The candle's lowest point dipped below the lower Bollinger Band.",
+  high_above_upper_band:         "The candle's highest point poked above the upper Bollinger Band.",
+  open_above_upper_band:         'Candle opened above the upper Bollinger Band.',
+  open_below_lower_band:         'Candle opened below the lower Bollinger Band.',
+  whole_candle_within_bands:     'The entire candle — high to low — stayed inside the Bollinger Bands.',
+  body_within_bands:             'Both the open and close prices are between the upper and lower bands.',
+  volume_gt_prev_candle:         'More shares traded in this candle than in the previous one.',
+  volume_lt_prev_candle:         'Fewer shares traded in this candle than in the previous one.',
+  volume_x_prev_min:             "Volume must be at least X× the previous candle's volume.",
+  candle_change_pct_min:         'Minimum % gain from open to close. e.g. 1.0 = closed at least 1% above open.',
+  candle_change_pct_max:         'Maximum % gain from open to close. e.g. -1.0 = fell at least 1% from open.',
+  change_vs_prev_close_pct_min:  "Minimum % move from the previous candle's close. e.g. 1.5 = up at least 1.5%.",
+  change_vs_prev_close_pct_max:  "Maximum % move from the previous candle's close. e.g. -1.0 = down at least 1%.",
+  gap_up_pct_min:                'Candle opened at least X% above the previous close — a gap-up open.',
+  gap_down_pct_min:              'Candle opened at least X% below the previous close — a gap-down open.',
+};
+
+function renderFilterGrid() {
+  const el      = document.getElementById('filter-grid');
+  const conds   = conditions[activeCandle] || {};
+  const visible = CONFIG.filters.filter(filterVisible);
+
+  if (!visible.length) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:8px 0">No filters in this category.</div>';
+    return;
+  }
+
+  el.innerHTML = visible.map(f => buildFilterCard(f, conds)).join('');
+
+  // Re-attach focus to any input that was being edited
+  // (needed because we do a full innerHTML replace)
+  visible.forEach(f => {
+    const stateKey = activeCandle + '__' + f.key;
+    if (stateKey in armedInputs) {
+      const inp = document.getElementById('inp_' + f.key);
+      if (inp) {
+        inp.focus();
+        // Put cursor at end
+        const len = inp.value.length;
+        inp.setSelectionRange(len, len);
+      }
+    }
+  });
+
+  updateMeta();
+}
+
+function buildFilterCard(f, conds) {
+  const stateKey = activeCandle + '__' + f.key;
+  const val      = conds[f.key];
+  const isArmed  = val === '__armed__';
+  // A filter is "selected" (green) when it has a real committed value
+  const isSel    = val !== undefined && val !== '__armed__';
+
+  const hint     = HINTS[f.key] || '';
+  const badgeCls = f.type === 'flag' ? 'badge-flag' : f.type === 'choice' ? 'badge-choice' : 'badge-num';
+  const badgeTxt = f.type === 'flag' ? 'on/off'     : f.type === 'choice' ? 'choose'       : 'number';
+
+  const extraCls = f.key === 'color_green' ? ' color-green-card'
+                 : f.key === 'color_red'   ? ' color-red-card'
+                 : '';
+  const stateCls = isSel ? ' sel' : isArmed ? ' armed' : '';
+
+  let inputHtml = '';
+  if ((f.type === 'float' || f.type === 'number') && (isArmed || isSel)) {
+    /*
+      Use the live armedInputs buffer if available so partial strings like
+      "0." or "-" survive re-renders without being clamped by parseFloat.
+      Fall back to the committed numeric value when the buffer is absent.
+    */
+    const displayVal = (stateKey in armedInputs)
+      ? armedInputs[stateKey]
+      : (isSel && typeof val === 'number' ? String(val) : '');
+
+    inputHtml = `
+      <div class="fcard-input" onclick="event.stopPropagation()">
+        <label>Value:</label>
+        <input
+          id="inp_${f.key}"
+          type="text"
+          inputmode="decimal"
+          value="${displayVal}"
+          placeholder="type a number…"
+          oninput="handleNumInput(event, '${f.key}')"
+          onblur="commitNumInput('${f.key}')"
+          onclick="event.stopPropagation()"
+        >
+      </div>
+      ${isArmed && !(stateKey in armedInputs)
+        ? `<div class="value-hint">⚠ Enter a value to activate this filter</div>`
+        : ''}`;
+  }
+
+  let colorIcon = '';
+  if (f.key === 'color_green') colorIcon = '<span class="color-icon" style="margin-left:4px">🟢</span>';
+  if (f.key === 'color_red')   colorIcon = '<span class="color-icon" style="margin-left:4px">🔴</span>';
+
+  return `
+    <div class="fcard${stateCls}${extraCls}"
+         onclick="toggleFilter('${f.key}', '${f.type}')">
+      <div class="fcard-top">
+        <div class="fcard-title">${f.label}${colorIcon}</div>
+        <span class="badge ${badgeCls}">${badgeTxt}</span>
+      </div>
+      ${hint ? `<div class="fcard-hint">${hint}</div>` : ''}
+      ${inputHtml}
+    </div>`;
+}
+
+function toggleFilter(key, type) {
+  const conds   = conditions[activeCandle];
+  const current = conds[key];
+  const stateKey = activeCandle + '__' + key;
+
+  if (type === 'flag') {
+    if (current !== undefined) delete conds[key];
+    else conds[key] = true;
+  } else {
+    if (current === undefined) {
+      // First click → arm the card (show the input)
+      conds[key] = '__armed__';
+    } else if (current === '__armed__') {
+      // Second click with no value → cancel
+      delete conds[key];
+      delete armedInputs[stateKey];
+    } else {
+      // Card already has a committed value → deselect
+      delete conds[key];
+      delete armedInputs[stateKey];
+    }
+  }
+
+  renderFilterGrid();
+  renderCandleTabs();
+  updateMeta();
+}
+
+/*
+  handleNumInput — fires on every keystroke inside a filter-card number input.
+
+  Strategy:
+  • Always store the raw string in armedInputs[stateKey] so the input
+    keeps whatever the user typed (including "0.", "-", "1.5e", etc.)
+  • Only commit a real number to conditions[] when parseFloat succeeds
+    AND the string isn't a "partial" (doesn't end with ".", "-", "e", "+").
+  • If the string is empty or unparseable, leave conditions[key] as '__armed__'
+    so the card stays orange but the input isn't cleared.
+*/
+function handleNumInput(event, key) {
+  event.stopPropagation();
+
+  const raw      = event.target.value;
+  const stateKey = activeCandle + '__' + key;
+
+  // Always persist the raw string so the input is never reset mid-typing
+  armedInputs[stateKey] = raw;
+
+  // Detect "partial" numeric strings that shouldn't be committed yet
+  const isPartial = /[.\-eE+]$/.test(raw) || raw === '' || raw === '-';
+
+  if (!isPartial) {
+    const num = parseFloat(raw);
+    if (!isNaN(num)) {
+      // Valid complete number → commit it
+      conditions[activeCandle][key] = num;
+    } else {
+      // Not a number at all → keep armed
+      conditions[activeCandle][key] = '__armed__';
+    }
+  } else {
+    // Still being typed → keep armed
+    conditions[activeCandle][key] = '__armed__';
+  }
+
+  // Refresh tabs (to update condition counts) but NOT the grid
+  // (re-rendering the grid would destroy the focused input)
+  renderCandleTabs();
+  updateMeta();
+}
+
+/*
+  commitNumInput — fires when the user leaves (blurs) the input.
+
+  At this point we do a final parse. If the string is still partial
+  (e.g. the user typed "0." and tabbed away) we round-trip it to a
+  clean number string so the display is tidy.
+*/
+function commitNumInput(key) {
+  const stateKey = activeCandle + '__' + key;
+  const raw      = armedInputs[stateKey] ?? '';
+  const num      = parseFloat(raw);
+
+  if (!isNaN(num)) {
+    conditions[activeCandle][key] = num;
+    // Clean up the buffer — the committed value will drive display now
+    delete armedInputs[stateKey];
+  } else {
+    // Nothing valid typed — leave as armed
+    conditions[activeCandle][key] = '__armed__';
+    delete armedInputs[stateKey];
+  }
+
+  // Now it's safe to re-render the full grid
+  renderFilterGrid();
+  renderCandleTabs();
+  updateMeta();
+}
+
+
+/* ═══════════════════════════════════════
+   META BAR
+═══════════════════════════════════════ */
+function updateMeta() {
+  document.getElementById('meta-stocks').textContent  = selectedStocks.size;
+  document.getElementById('meta-candles').textContent = numCandles;
+  const total = conditions.reduce((sum, c) => {
+    return sum + Object.values(c).filter(v => v !== '__armed__').length;
+  }, 0);
+  document.getElementById('meta-filters').textContent = total;
+}
+
+
+/* ═══════════════════════════════════════
+   LOAD STRATEGY MODAL
+═══════════════════════════════════════ */
+async function openLoadModal() {
+  document.getElementById('modal-overlay').classList.add('show');
+  document.getElementById('strat-search').value = '';
+  document.getElementById('modal-body').innerHTML = `
+    <div class="modal-loading">
+      <div class="spinner"></div>
+      <span>Loading strategies…</span>
+    </div>`;
+
+  try {
+    const res  = await fetch('/api/strategies');
+    const data = await res.json();
+    if (data.error) {
+      document.getElementById('modal-body').innerHTML = `<div class="modal-empty">⚠ ${data.error}</div>`;
+      return;
+    }
+    allStrategies  = data.strategies || [];
+    filteredStrats = [...allStrategies];
+    renderStratList();
+  } catch(e) {
+    document.getElementById('modal-body').innerHTML =
+      `<div class="modal-empty">⚠ Could not load strategies.<br>Check the terminal for errors.</div>`;
+  }
+
+  setTimeout(() => document.getElementById('strat-search').focus(), 120);
+}
+
+function closeLoadModal() {
+  document.getElementById('modal-overlay').classList.remove('show');
+}
+
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('modal-overlay')) closeLoadModal();
+}
+
+function filterStratList() {
+  const q = document.getElementById('strat-search').value.trim().toLowerCase();
+  filteredStrats = q
+    ? allStrategies.filter(s =>
+        (s.name || '').toLowerCase().includes(q) ||
+        (s.direction || '').toLowerCase().includes(q)
+      )
+    : [...allStrategies];
+  renderStratList();
+}
+
+function renderStratList() {
+  const el = document.getElementById('modal-body');
+
+  if (!allStrategies.length) {
+    el.innerHTML = `
+      <div class="modal-empty">
+        No saved strategies found.<br>
+        <span style="color:var(--muted2)">Run a backtest and tick <strong>save strategy</strong>.</span>
+      </div>`;
+    return;
+  }
+
+  if (!filteredStrats.length) {
+    el.innerHTML = `<div class="modal-empty">No strategies match your search.</div>`;
+    return;
+  }
+
+  el.innerHTML = `<div class="strat-list">${filteredStrats.map((s, idx) => buildStratItem(s, idx)).join('')}</div>`;
+}
+
+function buildStratItem(s, idx) {
+  const name        = s.name        || 'Unnamed';
+  const direction   = s.direction   || '—';
+  const holdCandles = s.hold_candles ?? '—';
+  const bbPeriod    = s.bb_period   ?? '—';
+  const bbStd       = s.bb_stddev   ?? '—';
+  const patCandles  = Array.isArray(s.pattern_candles) ? s.pattern_candles.length : '—';
+
+  let totalConds = 0;
+  if (Array.isArray(s.pattern_candles)) {
+    s.pattern_candles.forEach(pc => {
+      Object.values(pc).forEach(v => {
+        if (v !== null && v !== undefined && v !== false) totalConds++;
+      });
+    });
+  }
+
+  const dirTag    = `<span class="strat-tag ${direction}">${direction.toUpperCase()}</span>`;
+  const candleTag = `<span class="strat-tag candles">${patCandles} candle${patCandles !== 1 ? 's' : ''}</span>`;
+  const condTag   = `<span class="strat-tag">${totalConds} conditions</span>`;
+
+  let condSummary = '';
+  if (Array.isArray(s.pattern_candles) && s.pattern_candles.length > 0) {
+    const activeKeys = Object.entries(s.pattern_candles[s.pattern_candles.length - 1])
+      .filter(([k, v]) => v !== null && v !== undefined && v !== false)
+      .map(([k, v]) => {
+        const label = (CONFIG.filters.find(f => f.key === k) || {}).label || k;
+        return typeof v === 'number' ? `${label}: ${v}` : label;
+      })
+      .slice(0, 3);
+    if (activeKeys.length) {
+      condSummary = `<div class="strat-conditions">Signal: ${activeKeys.join(' · ')}${totalConds > 3 ? ' …' : ''}</div>`;
+    }
+  }
+
+  return `
+    <div class="strat-item" onclick="applyStrategy(${idx})">
+      <div class="strat-icon">📋</div>
+      <div class="strat-info">
+        <div class="strat-name">${name}</div>
+        <div class="strat-meta">
+          <span>hold ${holdCandles}</span>
+          <span>BB ${bbPeriod} / ${bbStd}</span>
+        </div>
+        <div class="strat-tags">${dirTag}${candleTag}${condTag}</div>
+        ${condSummary}
+      </div>
+    </div>`;
+}
+
+function applyStrategy(filteredIdx) {
+  const s = filteredStrats[filteredIdx];
+  if (!s) return;
+
+  document.getElementById('strat-name').value   = s.name        || 'my_strategy';
+  document.getElementById('direction').value    = s.direction   || 'long';
+  document.getElementById('hold-candles').value = s.hold_candles ?? 1;
+  document.getElementById('bb-period').value    = s.bb_period   ?? 20;
+  document.getElementById('bb-stddev').value    = s.bb_stddev   ?? 2.0;
+
+  // Restore data settings if saved in the strategy
+  if (s.days)     document.getElementById('days-of-data').value  = s.days;
+  if (s.interval) {
+    document.getElementById('candle-interval').value = s.interval;
+  }
+
+  if (Array.isArray(s.pattern_candles) && s.pattern_candles.length > 0) {
+    conditions = s.pattern_candles.map(pc => {
+      const out = {};
+      Object.entries(pc).forEach(([k, v]) => {
+        if (v !== null && v !== undefined && v !== false) out[k] = v;
+      });
+      return out;
+    });
+    numCandles   = conditions.length;
+    activeCandle = numCandles - 1;
+  } else {
+    conditions   = [{}];
+    numCandles   = 1;
+    activeCandle = 0;
+  }
+
+  armedInputs    = {};
+  activeCategory = 'all';
+  renderCatStrip();
+  renderCandleTabs();
+  renderFilterGrid();
+  updateMeta();
+
+  document.getElementById('loaded-banner-name').textContent = s.name || 'Unnamed';
+  document.getElementById('loaded-banner').classList.add('show');
+
+  closeLoadModal();
+  toast(`Loaded strategy: ${s.name}`, 'ok');
+}
+
+function clearLoadedStrategy() {
+  conditions   = [{}];
+  numCandles   = 1;
+  activeCandle = 0;
+  armedInputs  = {};
+
+  document.getElementById('strat-name').value    = CONFIG.defaults.strategy_name  || 'my_strategy';
+  document.getElementById('direction').value     = CONFIG.defaults.direction      || 'long';
+  document.getElementById('hold-candles').value  = CONFIG.defaults.hold_candles   || 1;
+  document.getElementById('bb-period').value     = CONFIG.defaults.bb_period      || 20;
+  document.getElementById('bb-stddev').value     = CONFIG.defaults.bb_stddev      || 2.0;
+  document.getElementById('days-of-data').value  = CONFIG.defaults.days_of_data   || 500;
+
+  const ciDefault = CONFIG.defaults.candle_interval || 15;
+  document.getElementById('candle-interval').value = ciDefault;
+
+  activeCategory = 'all';
+  renderCatStrip();
+  renderCandleTabs();
+  renderFilterGrid();
+  updateMeta();
+
+  document.getElementById('loaded-banner').classList.remove('show');
+  toast('Strategy cleared — back to defaults.', 'ok');
+}
+
+
+/* ═══════════════════════════════════════
+   RUN BACKTEST
+═══════════════════════════════════════ */
+async function runBacktest() {
+  if (!selectedStocks.size) {
+    toast('Select at least one stock first.', 'err');
+    return;
+  }
+
+  const noToken = [...selectedStocks].filter(sym => !_stockHasToken(sym, selectedBroker));
+  if (noToken.length) {
+    toast(`No ${selectedBroker.toUpperCase()} token for: ${noToken.join(', ')}`, 'err');
+    return;
+  }
+
+  setStatus('running');
+  document.getElementById('btn-run').disabled = true;
+  document.getElementById('spinner').classList.add('show');
+  document.getElementById('spinner-text').textContent =
+    `Running on ${selectedBroker.toUpperCase()} — ${selectedStocks.size} stock(s)…`;
+  document.getElementById('results-section').innerHTML = '';
+
+  // Sanitise conditions — drop armed / empty / partial entries
+  const cleanConditions = conditions.map(cond => {
+    const out = {};
+    for (const [k, v] of Object.entries(cond)) {
+      if (v !== '' && v !== null && v !== undefined && v !== '__armed__') out[k] = v;
+    }
+    return out;
+  });
+
+  const payload = {
+    strategy_name:   document.getElementById('strat-name').value || 'my_strategy',
+    direction:       document.getElementById('direction').value,
+    hold_candles:    parseInt(document.getElementById('hold-candles').value)    || 1,
+    bb_period:       parseInt(document.getElementById('bb-period').value)       || 20,
+    bb_stddev:       parseFloat(document.getElementById('bb-stddev').value)     || 2.0,
+    days_of_data:    parseInt(document.getElementById('days-of-data').value)    || 500,
+    candle_interval: parseInt(document.getElementById('candle-interval').value) || 15,
+    candles:         cleanConditions,
+    stocks:          Array.from(selectedStocks),
+    broker:          selectedBroker,
+    save_strategy:   document.getElementById('chk-save').checked,
+  };
+
+  let data;
+  try {
+    const res = await fetch('/api/run', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(payload),
+    });
+    data = await res.json();
+  } catch(e) {
+    toast('Network error — check the terminal.', 'err');
+    setStatus('idle');
+    document.getElementById('btn-run').disabled = false;
+    document.getElementById('spinner').classList.remove('show');
+    return;
+  }
+
+  document.getElementById('spinner').classList.remove('show');
+  document.getElementById('btn-run').disabled = false;
+  setStatus('idle');
+
+  if (data.error) { toast(data.error, 'err'); return; }
+  renderResults(data.results || []);
+  if (payload.save_strategy) toast('Strategy saved.', 'ok');
+}
+
+
+/* ═══════════════════════════════════════
+   RENDER RESULTS
+═══════════════════════════════════════ */
+function renderResults(results) {
+  const el = document.getElementById('results-section');
+  if (!results.length) {
+    el.innerHTML = '<div class="empty">No results returned.</div>';
+    return;
+  }
+
+  el.innerHTML = `<div class="results-header">${results.length} stock${results.length > 1 ? 's' : ''} tested</div>`;
+
+  results.forEach(r => {
+    const card       = document.createElement('div');
+    card.className   = 'result-card';
+    const brokerName = (r.broker || selectedBroker).toLowerCase();
+    const brokerTag  = `<span class="result-broker-tag ${brokerName}">${brokerName.toUpperCase()}</span>`;
+
+    if (r.error) {
+      card.innerHTML = `
+        <div class="result-card-header">
+          <span class="result-sym">${r.symbol}</span>
+          <span class="result-exch">${r.exchange}</span>
+          ${brokerTag}
+          <span class="result-error">⚠ ${r.error}</span>
+        </div>`;
+      el.appendChild(card);
+      return;
+    }
+
+    const s      = r.summary || {};
+    const trades = r.trades  || [];
+
+    const totalTrades = s.total_trades ?? s.trades ?? trades.length;
+    const wins        = s.wins          ?? s.winning_trades ?? '—';
+    const losses      = s.losses        ?? s.losing_trades  ?? '—';
+    const winRate     = s.win_rate      ?? s.win_pct        ??
+      (wins !== '—' && totalTrades ? ((wins / totalTrades) * 100).toFixed(1) + '%' : '—');
+    const totalPnl    = s.total_pnl     ?? s.total_profit   ?? s.pnl ?? '—';
+    const avgPnl      = s.avg_pnl       ?? s.avg_profit     ?? '—';
+
+    const fmtPnl = v => {
+      if (v === '—' || v === null || v === undefined) return { txt: '—', cls: '' };
+      const n = parseFloat(v);
+      if (isNaN(n)) return { txt: String(v), cls: '' };
+      return { txt: (n >= 0 ? '+' : '') + n.toFixed(2), cls: n > 0 ? 'pos' : n < 0 ? 'neg' : 'neu' };
+    };
+
+    const pnlFmt = fmtPnl(totalPnl);
+    const avgFmt = fmtPnl(avgPnl);
+    const uid    = 'r_' + r.symbol + '_' + Date.now();
+    const tokenUsed = _stockToken(r.symbol) || '—';
+
+    card.innerHTML = `
+      <div class="result-card-header">
+        <span class="result-sym">${r.symbol}</span>
+        <span class="result-exch">${r.exchange}</span>
+        ${brokerTag}
+        <span class="result-token">token: ${tokenUsed}</span>
+      </div>
+      <div class="stat-row">
+        <div class="stat"><div class="stat-label">Candles</div><div class="stat-value">${r.candles_fetched ?? '—'}</div></div>
+        <div class="stat"><div class="stat-label">Trades</div><div class="stat-value">${totalTrades}</div></div>
+        <div class="stat"><div class="stat-label">Wins</div><div class="stat-value pos">${wins}</div></div>
+        <div class="stat"><div class="stat-label">Losses</div><div class="stat-value neg">${losses}</div></div>
+        <div class="stat"><div class="stat-label">Win rate</div><div class="stat-value">${winRate}</div></div>
+        <div class="stat"><div class="stat-label">Total P&L</div><div class="stat-value ${pnlFmt.cls}">${pnlFmt.txt}</div></div>
+        <div class="stat"><div class="stat-label">Avg P&L</div><div class="stat-value ${avgFmt.cls}">${avgFmt.txt}</div></div>
+      </div>
+      ${trades.length ? `
+        <div class="trades-toggle" onclick="toggleTrades('${uid}')">
+          ▸ show ${trades.length} trade${trades.length > 1 ? 's' : ''}
+        </div>
+        <div id="${uid}" style="display:none">
+          <div class="trades-table-wrap">${buildTradesTable(trades)}</div>
+        </div>` : ''}
+    `;
+    el.appendChild(card);
+  });
+}
+
+function buildTradesTable(trades) {
+  if (!trades.length) return '';
+  const keys   = Object.keys(trades[0]);
+  const pnlKey = keys.find(k => k.toLowerCase().includes('pnl') || k.toLowerCase().includes('profit'));
+  return `
+    <table class="trades-table">
+      <thead><tr>${keys.map(k => `<th>${k}</th>`).join('')}</tr></thead>
+      <tbody>
+        ${trades.map(t => `<tr>${keys.map(k => {
+          const v = t[k];
+          let cls = '';
+          if (k === pnlKey) {
+            const n = parseFloat(v);
+            cls = isNaN(n) ? '' : n > 0 ? ' class="pos"' : n < 0 ? ' class="neg"' : '';
+          }
+          return `<td${cls}>${v ?? '—'}</td>`;
+        }).join('')}</tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+function toggleTrades(uid) {
+  const el  = document.getElementById(uid);
+  const tog = el.previousElementSibling;
+  const opening = el.style.display === 'none';
+  el.style.display = opening ? 'block' : 'none';
+  tog.textContent  = opening
+    ? tog.textContent.replace('▸', '▾').replace('show', 'hide')
+    : tog.textContent.replace('▾', '▸').replace('hide', 'show');
+}
+
+
+/* ═══════════════════════════════════════
+   HELPERS
+═══════════════════════════════════════ */
+function setStatus(state) {
+  document.getElementById('status-dot').className    = 'dot ' + state;
+  document.getElementById('status-text').textContent = state;
+}
+
+function toast(msg, type = 'ok') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className   = `toast ${type} show`;
+  setTimeout(() => el.classList.remove('show'), 3600);
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeLoadModal();
+});
+
+boot();
+</script>
+</body>
+</html>
